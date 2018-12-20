@@ -7,6 +7,9 @@
 
 # Plots a single histogram with a nice theme.
 
+# If you want to expand the y axis, save the plot in an object and then 
+# plot if again with scale_y_continous(limits = c(ymin, ymax)).
+
 
 # Arguments ---------------------------------------------------------------
 
@@ -15,6 +18,7 @@
 # title_string = plot title
 # subtitle_string = optional, plot subtitle
 # caption_string = optional, plot caption 
+
 
 # Function ----------------------------------------------------------------
 
@@ -34,19 +38,22 @@ plot_histogram <- function(data, column, title_string = "Histogram", subtitle_st
   b <- diff(range(vec, na.rm = TRUE)) / (2 * IQR(vec, na.rm = TRUE) / length(vec)^(1 / 3))
   
   # Plot histogram
-  data %>%
+  plot <- data %>%
     ggplot(aes(!!column)) +
     geom_histogram(bins = b, fill = "grey", color = "black") +
     ylab("Count") +
     labs(
       title = title_string,
-      subtitle = sub_string,
+      subtitle = subtitle_string,
       caption = caption_string
     ) +
     theme(
       panel.background = element_blank(),
       axis.line = element_line(color = "black")
-    ) +
-    scale_y_continuous(expand = c(0,0))
+    )
+  
+    plot +
+      scale_y_continuous(expand = c(0,0),
+                         limits=c(0,max(ggplot_build(plot)$data[[1]]$count)*1.1))
 }
 
