@@ -23,7 +23,7 @@
 
 # Function ----------------------------------------------------------------
 
-plot_scatterplot <- function(data, column1, column2, ylabel, xlabel, 
+plot_scatterplot <- function(data, column1, column2, y_label, x_label, 
                              title_string = "Scatterplot", 
                              subtitle_string = NULL, caption_string = NULL, 
                              smooth = FALSE) {
