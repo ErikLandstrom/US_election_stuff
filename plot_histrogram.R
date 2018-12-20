@@ -15,6 +15,7 @@
 
 # data = tibble
 # column = column to be plotted, as an object
+# x_label = character, x label
 # title_string = plot title
 # subtitle_string = optional, plot subtitle
 # caption_string = optional, plot caption 
@@ -22,13 +23,16 @@
 
 # Function ----------------------------------------------------------------
 
-plot_histogram <- function(data, column, title_string = "Histogram", subtitle_string = NULL, caption_string = NULL) {
+plot_histogram <- function(data, column, x_label,
+                           title_string = "Histogram", subtitle_string = NULL,
+                           caption_string = NULL) {
   
   # Libraries
   library(tidyverse)
   
   # quote column variable
   column <- enquo(column)
+  x_label <- enquo(x_label)
   
   # Create a vector of the data in the column
   vec <- as_vector(data %>%
@@ -41,6 +45,7 @@ plot_histogram <- function(data, column, title_string = "Histogram", subtitle_st
   plot <- data %>%
     ggplot(aes(!!column)) +
     geom_histogram(bins = b, fill = "grey", color = "black") +
+    xlab(!!x_label)
     ylab("Count") +
     labs(
       title = title_string,
