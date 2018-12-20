@@ -135,7 +135,7 @@ plot_scatterplot_text(state_data, Total_pop, ec_votes,
 kable(state_data %>%
   select(State, Total_pop, ec_votes) %>%
   mutate(rank = 53 -rank(Total_pop)) %>%
-    select(State, Total_pop, ec_votes, rank) %>%
+  select(State, Total_pop, ec_votes, rank) %>%
   arrange(desc(Total_pop)), format = "pandoc")
 ```
 
@@ -143,6 +143,69 @@ Puerto Rico is the 30th most populated state. I'm interested how many electoral
 votes Puerto Rico would be granted if it became a state
 
 ```{r}
+# Calculate and print simple ec votes according to poulation with Puerto Rico included
+state_ec_data <- state_data %>%
+  select(State, Abbreviation, Total_pop, ec_votes) %>%
+  mutate(rank = 53 -rank(Total_pop),
+         US_total_pop = sum(Total_pop),
+         pop_percent = Total_pop / US_total_pop * 100,
+         Total_ec_votes = sum(ec_votes, na.rm = TRUE),
+         new_ec_votes = round(pop_percent / 100 * Total_ec_votes)) %>%
+  select(State, Abbreviation, Total_pop, pop_percent, ec_votes, new_ec_votes, rank)
 
+kable(state_ec_data %>%
+        arrange(desc(Total_pop)), format = "pandoc")
 ```
+
+This is obiously not exactly how this is done, this method would give more votes
+to more popolous states and less to less popolous states.
+
+After some reading I found out that each state gets 1 vote per senator (2 in 
+total) and 1 per representatives in the congress. So if we subtract 104 (the 
+number of senators if both Puerto Rico and Washington DC were considered to be 
+states) from the total number of electoral votes and then distribute the 
+remaining votes proportionally to their population.
+
+```{r}
+state_ec_data <- state_ec_data %>%
+  mutate(total_ec_votes = sum(ec_votes, na.rm = TRUE) - 100,
+         correct_ec_votes = 2 + round(pop_percent / 100 * total_ec_votes))
+
+kable(state_ec_data %>%
+        arrange(rank), format = "pandoc")
+```
+
+This looks about right! Let's calculate population per electoral vote:
+
+```{r}
+state_ec_data <- state_ec_data %>%
+  mutate(population_per_vote = Total_pop / correct_ec_votes,
+         population_per_vote_proportional = Total_pop / new_ec_votes )
+
+kable(state_ec_data %>%
+        arrange(desc(Total_pop)), format = "pandoc")
+```
+
+Let's see the correlation between number of votes and population.
+
+```{r}
+# Correct ec votes
+plot_scatterplot_text(state_ec_data, Total_pop, population_per_vote,  
+                      y_label = "Population per vote", x_label = "Population", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Smaller state have more votes per capita than larger states")
+
+# Proportional ec votes
+plot_scatterplot_text(state_ec_data, Total_pop, population_per_vote_proportional,  
+                      y_label = "Population per vote", x_label = "Population", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "A proportional electoral college system creates a large variance\nin smaller states",
+                      subtitle_string = "This is probably due to the rounding of decimal numbers")
+```
+
+I'd say both these plots are evidence that a completely proportional system that
+would not depend on electoral college votes would be the most fair system for
+US presidential elections. But at least with the proportional electoral system
+most states have about 600 000 inhabitants per vote.
+
 
