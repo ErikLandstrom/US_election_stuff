@@ -32,7 +32,6 @@ plot_histogram <- function(data, column, x_label,
   
   # quote column variable
   column <- enquo(column)
-  x_label <- enquo(x_label)
   
   # Create a vector of the data in the column
   vec <- as_vector(data %>%
@@ -45,7 +44,7 @@ plot_histogram <- function(data, column, x_label,
   plot <- data %>%
     ggplot(aes(!!column)) +
     geom_histogram(bins = b, fill = "grey", color = "black") +
-    xlab(!!x_label)
+    xlab(x_label) +
     ylab("Count") +
     labs(
       title = title_string,
