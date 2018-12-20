@@ -1,0 +1,148 @@
+---
+title: "R Notebook"
+output: 
+  html_notebook
+---
+
+# 1. Preparation
+
+## 1.1 Libraries
+
+```{r}
+library(tidyverse)
+library(knitr)
+```
+
+## 1.2 Load data
+
+```{r}
+# US demographic data
+data <- read_csv("acs2015_county_data.csv")
+
+# US abbreviations
+abbreviations <- read_tsv("US_state_abbreviations.txt")
+
+# Join data
+data <- full_join(data, abbreviations, by = "State")
+```
+
+This data is taken from the _2015 American Community Survey 5-year estimates_, 
+the dataset can be found [here](https://www.kaggle.com/muonneutrino/us-census-demographic-data/home).
+
+
+
+```{r }
+# Structure
+glimpse(data)
+```
+
+
+# 2. Analysis
+
+# 2.1 Income
+
+# 2.1.2 Income per state
+
+```{r}
+# Summarise population and income per state
+state_data <- data %>%
+  group_by(State) %>%
+  summarise(Abbreviation = unique(Abbreviation),
+            Total_pop = sum(TotalPop, na.rm = TRUE),
+            Income_sd = sd(Income),
+            Income = mean(Income, na.rm = TRUE),
+            Income_per_cap = mean(IncomePerCap, na.rm = TRUE),
+            Income_per_cap_sd = sd(IncomePerCap,na.rm = TRUE),
+            Poverty = sum(Poverty / 100 * TotalPop, na.rm = TRUE),
+            Poverty_percent = Poverty / Total_pop * 100,
+            Unemployment = sum(Unemployment / 100 * TotalPop, na.rm = TRUE),
+            Unemployment_percent = Unemployment / Total_pop * 100,
+            White = sum(White / 100 * TotalPop, na.rm = TRUE),
+            White_percent = White / Total_pop * 100,
+            Black = sum(Black / 100 * TotalPop, na.rm = TRUE),
+            Black_percent = Black / Total_pop * 100,
+            Hispanic = sum(Hispanic / 100 * TotalPop, na.rm = TRUE),
+            Hispanic_percent = Hispanic / Total_pop * 100,
+            Asian = sum(Asian / 100 * TotalPop, na.rm = TRUE),
+            Asian_percent = Asian / Total_pop * 100,
+            Native = sum(Native / 100 * TotalPop, na.rm = TRUE),
+            Native_percent = White / Total_pop * 100,
+            Pacific = sum(Pacific / 100 * TotalPop, na.rm = TRUE),
+            Pacific_percent = Pacific / Total_pop * 100)
+
+# At least texas has a NA in Income
+
+# Plot
+plot_histogram(state_data, Income, 
+               x_label = "Income ($)",
+               title_string = "Histogram showing the median income for each state",
+               subtitle_string = "Puerto Rico is an outlier")
+plot_histogram(state_data, Income_per_cap,
+               x_label = "Income per capita ($)",
+               title_string = "Histogram showing the  income per capita for each state",
+               subtitle_string = "Puerto Rico and Washington DC are outliers")
+
+# Is income and income per capita correlated?
+plot_scatterplot_text(state_data, Income, Income_per_cap, 
+                      y_label = "Income per capita ($)", x_label = "Income ($)", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Median income and income per capita show a clear correlation for US states",
+                      subtitle_string = "Washington DC has a higher income per capita then predicted by the model")
+
+# Is income and population correlatad?
+plot_scatterplot_text(state_data, Total_pop, Income,  
+                      y_label = "Income ($)", x_label = "Population", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Median income and population have no correlation for US states")
+
+# Is income and poverty correlated?
+plot_scatterplot_text(state_data, Poverty_percent, Income,  
+                      y_label = "Income ($)", x_label = "Percentage of population living in poverty", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Median income and share of population have a negative correlation",
+                      subtitle_string = "Puerto Rico is an outlier again")
+
+# Is income and unemployment correlated?
+plot_scatterplot_text(state_data, Unemployment_percent, Income,  
+                      y_label = "Income ($)", x_label = "Percentage of population unemployed", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Median income and unemployment correlates negatively",
+                      subtitle_string = "Puerto Rico is poorer than any other US state")
+```
+
+## 2.2 Population
+
+# 2.2.1 Population and electoral college votes
+
+```{r}
+# Read electoral college data
+ec_data <- read_tsv("electoral_college.txt") %>%
+  rename(ec_votes = `Number of Electoral Votes`)
+
+# Join with state data
+state_data <- full_join(state_data, ec_data, by = "State")
+
+# How does state population and electoral college votes correlate?
+plot_scatterplot_text(state_data, Total_pop, ec_votes,  
+                      y_label = "Electoral votes", x_label = "Population", 
+                      text = Abbreviation, smooth = TRUE,
+                      title_string = "Median income and unemployment correlates negatively",
+                      subtitle_string = "Puerto Rico is poorer than any other US state")
+```
+
+```{r}
+# Print population table sorted to see where Puerto Rico is
+kable(state_data %>%
+  select(State, Total_pop, ec_votes) %>%
+  mutate(rank = 53 -rank(Total_pop)) %>%
+    select(State, Total_pop, ec_votes, rank) %>%
+  arrange(desc(Total_pop)), format = "pandoc")
+```
+
+Puerto Rico is the 30th most populated state. I'm interested how many electoral
+votes Puerto Rico would be granted if it became a state
+
+```{r}
+
+```
+
