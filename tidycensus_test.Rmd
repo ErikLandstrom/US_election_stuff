@@ -1,0 +1,22 @@
+---
+title: "US Demographics - 2010 census analysis"
+output: 
+  html_notebook
+---
+
+# 1. Load libraries
+
+```{r library}
+library(tidyverse)
+library(tidycensus)
+```
+
+# 2. Check out the `tidycensus` package 
+
+```{r}
+# List all functions in the tidycensus package
+ls("package:tidycensus")
+
+
+```
+
