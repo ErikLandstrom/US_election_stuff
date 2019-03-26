@@ -1,0 +1,200 @@
+---
+title: "US demographics new"
+author: "Erik Ländström"
+date: "25 March 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Read libraries
+
+```{r library}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+# 2. Process and tidy data
+
+## 2.1 Read data
+
+Read demographics data from the _2015 American Community Survey 5-year estimates_, 
+the dataset can be found [here](https://www.kaggle.com/muonneutrino/us-census-demographic-data/home). 
+
+```{r read_data}
+# Read data
+demographics_data <- read_csv("acs2015_county_data.csv")
+
+# Take a glimpse at the data
+glimpse(demographics_data)
+```
+
+Read state abbreviations and join with county data.
+
+```{r state_abbs}
+# Read state abbreviations
+state_abbs <- read_tsv("US_state_abbreviations.txt")
+
+# Take a look at the state abbreviations
+state_abbs %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
+```
+
+```{r join_county_abbs}
+# Join demographics data with state abbs
+demographics_data <- full_join(demographics_data, state_abbs, by = "State")
+```
+
+# 3. Data analysis
+
+# 3.1 Population
+
+```{r func1, echo = FALSE}
+plot_histogram <- function(data, column, x_label,
+                           title_string = "Histogram", subtitle_string = NULL,
+                           caption_string = NULL) {
+  
+  # Libraries
+  library(tidyverse)
+  
+  # quote column variable
+  column <- enquo(column)
+  
+  # Create a vector of the data in the column
+  vec <- as_vector(data %>%
+                     select(!!column))
+  
+  # Calculates the optimal number of bins for one sample according to the Freedman-Diaconis rule
+  b <- diff(range(vec, na.rm = TRUE)) / (2 * IQR(vec, na.rm = TRUE) / length(vec)^(1 / 3))
+  
+  # Plot histogram
+  plot <- data %>%
+    ggplot(aes(!!column)) +
+    geom_histogram(bins = b, fill = "grey", color = "black") +
+    xlab(x_label) +
+    ylab("Count") +
+    labs(
+      title = title_string,
+      subtitle = subtitle_string,
+      caption = caption_string
+    ) +
+    theme(
+      panel.background = element_blank(),
+      axis.line = element_line(color = "black")
+    )
+  
+    plot +
+      scale_y_continuous(expand = c(0,0),
+                         limits=c(0,max(ggplot_build(plot)$data[[1]]$count)*1.1))
+}
+```
+
+```{r pop1}
+# Histogram: original data
+plot_histogram(demographics_data, 
+               TotalPop, 
+               x_label = "Total population",
+               title_string = "Histogram: original data")
+
+# Histogram: log10 transformed data
+plot_histogram(demographics_data %>% 
+                 mutate(TotalPop = log10(TotalPop)),
+               TotalPop,
+               x_label = "log10(population)",
+               title_string = "Log10 transformed population data is better for visualization")
+```
+
+```{r normal_pop}
+shapiro.test(as_vector(demographics_data %>%
+                         select(TotalPop)))
+
+ggplot(demographics_data) +
+  geom_qq(aes(sample = TotalPop)) +
+  geom_qq_line(aes(sample = TotalPop))
+
+shapiro.test(as_vector(demographics_data %>% 
+                         mutate(TotalPop = log10(TotalPop)) %>%
+                         select(TotalPop)))
+
+ggplot(demographics_data %>% 
+                         mutate(TotalPop = log10(TotalPop)) %>%
+                         select(TotalPop)) +
+  geom_qq(aes(sample = TotalPop)) +
+  geom_qq_line(aes(sample = TotalPop))
+```
+
+It's apparent from both the Shapiro-Wilk test (null hypothesis is that the data
+is normally distributed, we thus reject the null hypothesis in this case) and
+the qqplot that the date is not normally distributed. But the log10 +
+transformation clearky make the dataset follow normality more than the original 
+data.
+
+See [link](https://ggplot2.tidyverse.org/reference/geom_qq.html) for more on 
+QQ-plots.
+
+### Correlation between population and proportion of white ethnicity?
+
+```{r func2, echo = FALSE}
+plot_scatterplot <- function(data, column1, column2, y_label, x_label, 
+                             title_string = "Scatterplot", 
+                             subtitle_string = NULL, caption_string = NULL, 
+                             smooth = FALSE) {
+  # Library
+  library(tidyverse)
+  
+  # Quote column names
+  column1 <- enquo(column1)
+  column2 <- enquo(column2)
+  
+  # Scatter plot
+  plot <- data %>%
+    ggplot(aes(!!column1, !!column2)) +
+    geom_point() +
+    xlab(x_label) +
+    ylab(y_label) +
+    labs(
+      title = title_string,
+      subtitle = subtitle_string,
+      caption = caption_string
+    ) +
+    theme(
+      panel.background = element_blank(),
+      axis.line = element_line(color = "black")
+    )
+  
+  # Plots smoothing curve if smooth = TRUE
+  if (smooth == TRUE) {
+    plot +
+      geom_smooth(method = "lm", color = "red", se = FALSE)
+  }
+  else {
+    plot
+  }
+}
+```
+
+Plot `White` against `TotalPop`.
+
+```{r scatter1}
+# White vs original TotalPop
+plot_scatterplot(demographics_data,
+                 column1 = White,
+                 column2 = TotalPop,
+                 x_label = "White (%)",
+                 y_label = "Population")
+
+# White vs log10(TotalPop)
+plot_scatterplot(demographics_data %>% 
+                   mutate(TotalPop = log10(TotalPop)),
+                 column1 = White,
+                 column2 = TotalPop,
+                 x_label = "White (%)",
+                 y_label = "log10(population)")
+```
+
+There is no correlation between a county's population and the proportion of
+white people living in the county.
