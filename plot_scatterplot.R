@@ -23,7 +23,8 @@
 
 # Function ----------------------------------------------------------------
 
-plot_scatterplot <- function(data, column1, column2, y_label, x_label, 
+plot_scatterplot <- function(data, column1, column2, color_column = NULL,
+                             y_label, x_label, 
                              title_string = "Scatterplot", 
                              subtitle_string = NULL, caption_string = NULL, 
                              smooth = FALSE) {
@@ -33,10 +34,11 @@ plot_scatterplot <- function(data, column1, column2, y_label, x_label,
   # Quote column names
   column1 <- enquo(column1)
   column2 <- enquo(column2)
+  color_column <- enquo(color_column)
   
   # Scatter plot
   plot <- data %>%
-    ggplot(aes(!!column1, !!column2)) +
+    ggplot(aes(!!column1, !!column2, color = !!color_column)) +
     geom_point() +
     xlab(x_label) +
     ylab(y_label) +
