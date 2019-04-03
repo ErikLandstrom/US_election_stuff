@@ -9,6 +9,9 @@ library(ggplot2)
 
 county_demo_data <- read_tsv("data/2015_demographics_census_county_data.txt")
 
+
+# UI ----------------------------------------------------------------------
+
 ui <- fluidPage(
   titlePanel("censusVis"),
   
@@ -33,6 +36,9 @@ ui <- fluidPage(
     )
   )
 )
+
+
+# Server ------------------------------------------------------------------
 
 server <- function(input, output) {
   
@@ -63,5 +69,8 @@ server <- function(input, output) {
   })
   
 }
+
+
+# Run app -----------------------------------------------------------------
 
 shinyApp(ui, server)
